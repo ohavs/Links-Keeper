@@ -1,65 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  getDocs,
+  Timestamp,
+  writeBatch,
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Category, LinkItem } from '../types';
-import { generateId } from '../lib/utils';
-
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: '1', name: 'כללי', color: '#64748b' },
-  { id: '2', name: 'עבודה', color: '#0ea5e9' },
-  { id: '3', name: 'קריאה', color: '#10b981' },
-  { id: '4', name: 'השראה', color: '#a855f7' },
-];
 
 export function useLinks() {
-  const [categories, setCategories] = useState<Category[]>(() => {
-    const saved = localStorage.getItem('link_categories');
-    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
-  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [links, setLinks] = useState<LinkItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [links, setLinks] = useState<LinkItem[]>(() => {
-    const saved = localStorage.getItem('link_items');
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  // Real-time listener for categories
   useEffect(() => {
-    localStorage.setItem('link_categories', JSON.stringify(categories));
-  }, [categories]);
+    const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cats: Category[] = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as Category[];
+      setCategories(cats);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
+  // Real-time listener for links
   useEffect(() => {
-    localStorage.setItem('link_items', JSON.stringify(links));
-  }, [links]);
+    const q = query(collection(db, 'links'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const items: LinkItem[] = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          url: data.url,
+          title: data.title,
+          description: data.description || '',
+          tags: data.tags || [],
+          categoryId: data.categoryId,
+          createdAt: data.createdAt instanceof Timestamp
+            ? data.createdAt.toMillis()
+            : data.createdAt,
+        };
+      });
+      setLinks(items);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  const addCategory = (name: string, color: string) => {
-    setCategories([...categories, { id: generateId(), name, color }]);
-  };
-
-  const addLink = (linkConfig: Omit<LinkItem, 'id' | 'createdAt'>) => {
-    const newLink: LinkItem = {
+  const addLink = useCallback(async (linkConfig: Omit<LinkItem, 'id' | 'createdAt'>) => {
+    await addDoc(collection(db, 'links'), {
       ...linkConfig,
-      id: generateId(),
-      createdAt: Date.now(),
-    };
-    setLinks([newLink, ...links]);
-  };
+      createdAt: Timestamp.now(),
+    });
+  }, []);
 
-  const updateLink = (id: string, updates: Partial<LinkItem>) => {
-    setLinks(links.map(link => link.id === id ? { ...link, ...updates } : link));
-  };
+  const updateLink = useCallback(async (id: string, updates: Partial<LinkItem>) => {
+    const ref = doc(db, 'links', id);
+    await updateDoc(ref, updates);
+  }, []);
 
-  const deleteLink = (id: string) => {
-    setLinks(links.filter(link => link.id !== id));
-  };
+  const deleteLink = useCallback(async (id: string) => {
+    const ref = doc(db, 'links', id);
+    await deleteDoc(ref);
+  }, []);
 
-  const moveLink = (linkId: string, categoryId: string) => {
-    updateLink(linkId, { categoryId });
-  };
+  const moveLink = useCallback(async (linkId: string, categoryId: string) => {
+    await updateLink(linkId, { categoryId });
+  }, [updateLink]);
+
+  const addCategory = useCallback(async (name: string, color: string) => {
+    const snapshot = await getDocs(collection(db, 'categories'));
+    const order = snapshot.size;
+    await addDoc(collection(db, 'categories'), { name, color, order });
+  }, []);
+
+  const deleteCategory = useCallback(async (categoryId: string) => {
+    // Delete all links in this category
+    const categoryLinks = links.filter(l => l.categoryId === categoryId);
+    const batch = writeBatch(db);
+    categoryLinks.forEach(link => {
+      batch.delete(doc(db, 'links', link.id));
+    });
+    batch.delete(doc(db, 'categories', categoryId));
+    await batch.commit();
+  }, [links]);
 
   return {
     categories,
     links,
+    loading,
     addCategory,
+    deleteCategory,
     addLink,
     updateLink,
     deleteLink,
-    moveLink
+    moveLink,
   };
 }

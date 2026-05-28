@@ -10,7 +10,7 @@ interface LinkListProps {
   categories: Category[];
   onMove: (linkId: string, categoryId: string) => void;
   onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onEdit: (link: LinkItem) => void;
   onAddClick?: () => void;
 }
 
@@ -32,7 +32,7 @@ export default function LinkList({ links, viewMode, categories, onMove, onDelete
 
   return (
     <div className={cn(
-      "gap-6 md:gap-8 z-10",
+      "gap-4 md:gap-6 z-10",
       viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" : "flex flex-col max-w-4xl mx-auto w-full"
     )}>
       {links.map(link => (
@@ -43,6 +43,7 @@ export default function LinkList({ links, viewMode, categories, onMove, onDelete
           categories={categories}
           onMove={onMove}
           onDelete={onDelete}
+          onEdit={onEdit}
         />
       ))}
       {viewMode === 'grid' && onAddClick && (

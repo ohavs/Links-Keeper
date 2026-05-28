@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🔗 Links Keeper - שומר הלינקים שלי
 
-# Run and deploy your AI Studio app
+אפליקציית PWA לניהול ושמירת לינקים, בנויה עם React + Firebase.
 
-This contains everything you need to run your app locally.
+## ✨ פיצ'רים
 
-View your app in AI Studio: https://ai.studio/apps/339fb6fd-4013-4c83-92a9-1a1aaf0c4f17
+- 📌 שמירת לינקים עם כותרת, תיאור, תגיות וקטגוריה
+- 🏷️ פילטור לפי תגיות
+- 📂 קטגוריות מותאמות אישית
+- 🔍 חיפוש מהיר
+- 🖱️ גרור ושחרר בין קטגוריות
+- 📱 מותאם למובייל - PWA
+- ☁️ סנכרון בענן עם Firebase Firestore
 
-## Run Locally
+## 🛠️ טכנולוגיות
 
-**Prerequisites:**  Node.js
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS 4
+- Firebase Firestore
+- Firebase Hosting
+- Lucide Icons
+- DnD Kit
 
+## 🚀 התחלה מהירה
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
+```
+
+## 📦 דיפלוי
+
+```bash
+npm run build
+firebase deploy
+```
+
+## 🔗 לינק חי
+
+[https://links-keeper-99871.web.app](https://links-keeper-99871.web.app)
