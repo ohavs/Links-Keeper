@@ -1,4 +1,4 @@
-const CACHE_NAME = 'link-keeper-v2';
+const CACHE_NAME = 'link-keeper-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -20,7 +20,7 @@ self.addEventListener('install', (event) => {
 // Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => 
+    caches.keys().then((keys) =>
       Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME)
@@ -33,9 +33,9 @@ self.addEventListener('activate', (event) => {
 // Fetch handler
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  
+
   // 1. Network-first for Firebase/API requests
-  if (url.hostname.includes('firestore.googleapis.com') || 
+  if (url.hostname.includes('firestore.googleapis.com') ||
       url.hostname.includes('firebase') ||
       url.hostname.includes('googleapis.com')) {
     event.respondWith(
@@ -45,7 +45,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 2. Network-first for HTML page/navigation requests (ensures immediate updates when online)
-  const isHtml = event.request.mode === 'navigate' || 
+  const isHtml = event.request.mode === 'navigate' ||
                  (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) ||
                  url.pathname === '/' ||
                  url.pathname === '/index.html';
@@ -54,13 +54,17 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          if (response.ok) {
+          if (response.ok && !url.search) {
+            // Only cache the clean root URL, not share-target URLs with query params
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(event.request, { ignoreSearch: true }) || caches.match('/'))
+        .catch(() =>
+          caches.match(event.request, { ignoreSearch: true })
+            .then((cached) => cached || caches.match('/'))
+        )
     );
     return;
   }

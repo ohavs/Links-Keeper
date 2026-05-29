@@ -40,60 +40,66 @@ export default function App() {
     }
   }, [categories, activeCategoryId]);
 
-  // Parse share target parameters on startup
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
+  // Parse share target URL params and store in sharedData state
+  const parseShareParams = React.useCallback(() => {
     const params = new URLSearchParams(window.location.search);
     const sharedUrl = params.get('url');
     const sharedTitle = params.get('title');
     const sharedText = params.get('text');
 
-    if (sharedUrl || sharedTitle || sharedText) {
-      let finalUrl = '';
-      let finalTitle = sharedTitle || '';
-      let finalDescription = '';
+    if (!sharedUrl && !sharedTitle && !sharedText) return;
 
-      // 1. Check if 'url' parameter contains a valid link
-      if (sharedUrl && (sharedUrl.startsWith('http://') || sharedUrl.startsWith('https://'))) {
-        finalUrl = sharedUrl;
-        if (sharedText) finalDescription = sharedText;
-      }
-      // 2. If not, check if 'text' contains a link
-      else if (sharedText) {
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        const match = sharedText.match(urlRegex);
-        if (match) {
-          finalUrl = match[0];
-          // Use remaining text as description or title
-          const remainingText = sharedText.replace(finalUrl, '').trim();
-          if (remainingText) {
-            if (!finalTitle) {
-              finalTitle = remainingText;
-            } else {
-              finalDescription = remainingText;
-            }
-          }
-        } else if (sharedText.startsWith('http://') || sharedText.startsWith('https://')) {
-          finalUrl = sharedText;
-        } else {
-          finalDescription = sharedText;
+    let finalUrl = '';
+    let finalTitle = sharedTitle || '';
+    let finalDescription = '';
+
+    if (sharedUrl && (sharedUrl.startsWith('http://') || sharedUrl.startsWith('https://'))) {
+      finalUrl = sharedUrl;
+      if (sharedText) finalDescription = sharedText;
+    } else if (sharedText) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const match = sharedText.match(urlRegex);
+      if (match) {
+        finalUrl = match[0];
+        const remainingText = sharedText.replace(finalUrl, '').trim();
+        if (remainingText) {
+          if (!finalTitle) finalTitle = remainingText;
+          else finalDescription = remainingText;
         }
+      } else {
+        finalDescription = sharedText;
       }
+    }
 
-      if (finalUrl) {
-        setSharedData({
-          url: finalUrl,
-          title: finalTitle || 'לינק משותף',
-          description: finalDescription
-        });
-        setIsAddModalOpen(true);
-      }
+    // Clear params from address bar immediately
+    window.history.replaceState({}, document.title, window.location.pathname);
 
-      // Clear search query parameters from browser address bar without reloading
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (finalUrl) {
+      setSharedData({
+        url: finalUrl,
+        title: finalTitle || 'לינק משותף',
+        description: finalDescription
+      });
     }
   }, []);
+
+  // Parse share params on initial load and also when the page is shown from bfcache
+  React.useEffect(() => {
+    parseShareParams();
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) parseShareParams();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [parseShareParams]);
+
+  // Open the Add Link modal once share data is ready AND the app has finished loading
+  React.useEffect(() => {
+    if (sharedData && !loading) {
+      setIsAddModalOpen(true);
+    }
+  }, [sharedData, loading]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
