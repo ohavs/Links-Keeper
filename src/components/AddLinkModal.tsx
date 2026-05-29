@@ -365,18 +365,18 @@ export default function AddLinkModal({
 
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3 sm:gap-5 pb-safe">
               <button
-                type="button"
-                onClick={handleCloseAttempt}
-                className="neo-btn bg-slate-300 hover:bg-slate-400 text-black text-base sm:text-lg py-3 px-8 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#000] min-h-[48px]"
-              >
-                ביטול
-              </button>
-              <button
                 type="submit"
                 disabled={saving || !categoryId}
                 className="neo-btn bg-[#34d399] hover:bg-[#10b981] text-black font-black text-base sm:text-lg py-3 px-10 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#000] min-h-[48px] disabled:opacity-50"
               >
                 {saving ? '⏳ שומר...' : (isEdit ? '💾 שמור שינויים' : '🚀 הוסף לינק למאגר')}
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseAttempt}
+                className="neo-btn bg-slate-300 hover:bg-slate-400 text-black text-base sm:text-lg py-3 px-8 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#000] min-h-[48px]"
+              >
+                ביטול
               </button>
             </div>
           </form>

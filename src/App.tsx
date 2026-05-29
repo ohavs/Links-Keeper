@@ -29,7 +29,10 @@ export default function App() {
   } = useLinks(user?.uid ?? null);
   
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('lk-viewmode');
+    return saved === 'list' ? 'list' : 'grid';
+  });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -209,7 +212,7 @@ export default function App() {
         <div className="flex-1 flex flex-col min-w-0 h-full">
           <Header 
             viewMode={viewMode}
-            onViewModeChange={setViewMode}
+            onViewModeChange={(mode) => { setViewMode(mode); localStorage.setItem('lk-viewmode', mode); }}
             onAddClick={() => setIsAddModalOpen(true)}
           />
           

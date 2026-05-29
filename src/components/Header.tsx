@@ -45,13 +45,13 @@ export default function Header({ viewMode, onViewModeChange, onAddClick }: Heade
           </button>
         </div>
         
-        <button 
+        <button
           onClick={onAddClick}
-          className="neo-btn bg-[#22d3ee] text-black p-0 w-10 h-10 shadow-[2px_2px_0_0_#000] hover:shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] flex items-center justify-center shrink-0"
+          className="bg-[#22d3ee] text-black w-10 h-10 border-[3px] border-black rounded-lg shadow-[2px_2px_0_0_#000] hover:shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center justify-center shrink-0 cursor-pointer outline-none transition-all"
           title="הוסף לינק"
           aria-label="הוסף לינק"
         >
-          <Plus size={22} className="stroke-[2.5]" />
+          <Plus size={22} strokeWidth={2.5} />
         </button>
       </div>
     </header>
