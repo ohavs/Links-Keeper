@@ -51,7 +51,7 @@ export default function Header({ viewMode, onViewModeChange, onAddClick }: Heade
           title="הוסף לינק"
           aria-label="הוסף לינק"
         >
-          <Plus size={20} className="stroke-[4]" />
+          <Plus size={22} className="stroke-[2.5]" />
         </button>
       </div>
     </header>

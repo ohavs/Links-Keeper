@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DndContext, DragEndEvent, pointerWithin, useSensor, useSensors, PointerSensor, KeyboardSensor } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useLinks } from './hooks/useLinks';
+import { useAuth } from './contexts/AuthContext';
 import { ViewMode, LinkItem } from './types';
 import Sidebar from './components/Sidebar';
 import LinkList from './components/LinkList';
@@ -9,21 +10,23 @@ import Header from './components/Header';
 import AddLinkModal from './components/AddLinkModal';
 import AddCategoryModal from './components/AddCategoryModal';
 import TagFilter from './components/TagFilter';
+import LoginPage from './components/LoginPage';
 import { cn } from './lib/utils';
 import { Loader2, Plus } from 'lucide-react';
 
 export default function App() {
-  const { 
-    categories, 
-    links, 
-    loading, 
-    addLink, 
-    updateLink, 
-    deleteLink, 
-    moveLink, 
-    addCategory, 
-    deleteCategory 
-  } = useLinks();
+  const { user, authLoading } = useAuth();
+  const {
+    categories,
+    links,
+    loading,
+    addLink,
+    updateLink,
+    deleteLink,
+    moveLink,
+    addCategory,
+    deleteCategory
+  } = useLinks(user?.uid ?? null);
   
   const [activeCategoryId, setActiveCategoryId] = useState<string>('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -77,7 +80,7 @@ export default function App() {
     if (finalUrl) {
       setSharedData({
         url: finalUrl,
-        title: finalTitle || 'לינק משותף',
+        title: finalTitle,
         description: finalDescription
       });
     }
@@ -124,7 +127,7 @@ export default function App() {
     return links.filter(link => link.categoryId === activeCategoryId);
   }, [links, activeCategoryId]);
 
-  // Extract unique tags from category links
+  // Extract unique tags from category links (for TagFilter)
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
     categoryLinks.forEach(link => {
@@ -132,6 +135,15 @@ export default function App() {
     });
     return Array.from(tagSet).sort();
   }, [categoryLinks]);
+
+  // Extract unique tags from ALL links (for AddLinkModal suggestions)
+  const allTagsFromLinks = useMemo(() => {
+    const tagSet = new Set<string>();
+    links.forEach(link => {
+      link.tags.forEach(tag => tagSet.add(tag));
+    });
+    return Array.from(tagSet).sort();
+  }, [links]);
 
   // Reset selected tags when switching category
   React.useEffect(() => {
@@ -158,20 +170,25 @@ export default function App() {
       });
   }, [categoryLinks, selectedTags]);
 
-  if (loading) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#f4f4f0]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="w-20 h-20 bg-[#facc15] border-[4px] border-black shadow-[6px_6px_0_0_#000] rounded-xl flex items-center justify-center animate-bounce">
-            <span className="text-3xl font-black font-mono">L</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Loader2 size={24} className="animate-spin stroke-[3]" />
-            <span className="text-lg font-black uppercase">טוען...</span>
-          </div>
+  const Spinner = () => (
+    <div className="flex h-[100dvh] items-center justify-center bg-[#f4f4f0]">
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-20 h-20 bg-[#facc15] border-[4px] border-black shadow-[6px_6px_0_0_#000] rounded-xl flex items-center justify-center animate-bounce">
+          <span className="text-3xl font-black font-mono">L</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Loader2 size={24} className="animate-spin stroke-[3]" />
+          <span className="text-lg font-black uppercase">טוען...</span>
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (authLoading) return <Spinner />;
+  if (!user) return <LoginPage />;
+
+  if (loading) {
+    return <Spinner />;
   }
 
   return (
@@ -181,10 +198,10 @@ export default function App() {
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-[100dvh] overflow-hidden bg-[#f4f4f0] text-black selection:bg-black selection:text-white">
-        <Sidebar 
-          categories={categories} 
-          activeCategoryId={activeCategoryId} 
-          onSelectCategory={setActiveCategoryId} 
+        <Sidebar
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          onSelectCategory={setActiveCategoryId}
           onAddCategory={() => setIsCategoryModalOpen(true)}
           onDeleteCategory={deleteCategory}
         />
@@ -249,7 +266,7 @@ export default function App() {
       </div>
 
       {isAddModalOpen && (
-        <AddLinkModal 
+        <AddLinkModal
           categories={categories}
           defaultCategoryId={activeCategoryId}
           onClose={() => {
@@ -260,16 +277,20 @@ export default function App() {
           initialUrl={sharedData?.url}
           initialTitle={sharedData?.title}
           initialDescription={sharedData?.description}
+          onAddCategory={addCategory}
+          allTags={allTagsFromLinks}
         />
       )}
 
       {editingLink && (
-        <AddLinkModal 
+        <AddLinkModal
           categories={categories}
           defaultCategoryId={activeCategoryId}
           linkToEdit={editingLink}
           onClose={() => setEditingLink(null)}
           onUpdate={updateLink}
+          onAddCategory={addCategory}
+          allTags={allTagsFromLinks}
         />
       )}
 

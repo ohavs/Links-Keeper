@@ -4,6 +4,11 @@ import { Category, LinkItem } from '../types';
 import { cn } from '../lib/utils';
 import ConfirmModal from './ConfirmModal';
 
+const INLINE_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#22c55e', '#06b6d4',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#64748b', '#000000'
+];
+
 interface AddLinkModalProps {
   categories: Category[];
   defaultCategoryId: string;
@@ -14,20 +19,50 @@ interface AddLinkModalProps {
   initialUrl?: string;
   initialTitle?: string;
   initialDescription?: string;
+  onAddCategory?: (name: string, color: string) => Promise<string>;
+  allTags?: string[];
 }
 
-function CategoryDropdown({ categories, value, onChange }: { categories: Category[], value: string, onChange: (id: string) => void }) {
+function CategoryDropdown({
+  categories,
+  value,
+  onChange,
+  onAddCategory,
+}: {
+  categories: Category[];
+  value: string;
+  onChange: (id: string) => void;
+  onAddCategory?: (name: string, color: string) => Promise<string>;
+}) {
   const [open, setOpen] = useState(false);
+  const [showInlineAdd, setShowInlineAdd] = useState(false);
+  const [inlineName, setInlineName] = useState('');
+  const [inlineColor, setInlineColor] = useState(INLINE_COLORS[5]);
   const ref = useRef<HTMLDivElement>(null);
   const selected = categories.find(c => c.id === value);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowInlineAdd(false);
+        setInlineName('');
+        setInlineColor(INLINE_COLORS[5]);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  const handleInlineSubmit = async () => {
+    if (!inlineName.trim() || !onAddCategory) return;
+    const newId = await onAddCategory(inlineName.trim(), inlineColor);
+    onChange(newId);
+    setShowInlineAdd(false);
+    setInlineName('');
+    setInlineColor(INLINE_COLORS[5]);
+    setOpen(false);
+  };
 
   return (
     <div className="relative" ref={ref}>
@@ -51,7 +86,7 @@ function CategoryDropdown({ categories, value, onChange }: { categories: Categor
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full mt-2 bg-white border-[3px] border-black rounded-xl shadow-[6px_6px_0_0_#000] z-50 overflow-hidden max-h-60 overflow-y-auto">
+        <div className="absolute left-0 right-0 top-full mt-2 bg-white border-[3px] border-black rounded-xl shadow-[6px_6px_0_0_#000] z-50 overflow-hidden max-h-72 overflow-y-auto">
           {categories.length === 0 && (
             <div className="px-4 py-6 text-center text-sm font-bold text-slate-400">
               אין קטגוריות עדיין.<br />צור קטגוריה חדשה קודם!
@@ -76,22 +111,86 @@ function CategoryDropdown({ categories, value, onChange }: { categories: Categor
               )}
             </button>
           ))}
+
+          {/* Inline Add Category */}
+          {onAddCategory && (
+            <div className="border-t-[2px] border-black/10">
+              {!showInlineAdd ? (
+                <button
+                  type="button"
+                  onClick={() => setShowInlineAdd(true)}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-right font-bold text-purple-600 cursor-pointer outline-none hover:bg-purple-50 transition-colors"
+                >
+                  <span className="text-lg leading-none">＋</span>
+                  <span className="text-sm">הוסף קטגוריה</span>
+                </button>
+              ) : (
+                <div className="px-4 py-3 flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={inlineName}
+                    onChange={e => setInlineName(e.target.value)}
+                    placeholder="שם הקטגוריה..."
+                    autoFocus
+                    className="neo-input w-full text-sm py-2 px-3 font-bold border-[2px] shadow-[2px_2px_0_0_#000]"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleInlineSubmit(); }
+                      if (e.key === 'Escape') { setShowInlineAdd(false); setInlineName(''); }
+                    }}
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {INLINE_COLORS.map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setInlineColor(color)}
+                        className={cn(
+                          "w-6 h-6 rounded border-[2px] border-black cursor-pointer transition-transform",
+                          inlineColor === color && "scale-125 shadow-[2px_2px_0_0_#000]"
+                        )}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleInlineSubmit}
+                      disabled={!inlineName.trim()}
+                      className="neo-btn bg-[#8b5cf6] hover:bg-[#7c3aed] text-white text-xs py-1.5 px-3 shadow-[2px_2px_0_0_#000] disabled:opacity-50 flex-1"
+                    >
+                      הוסף
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowInlineAdd(false); setInlineName(''); setInlineColor(INLINE_COLORS[5]); }}
+                      className="neo-btn bg-slate-200 hover:bg-slate-300 text-black text-xs py-1.5 px-3 shadow-[2px_2px_0_0_#000]"
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export default function AddLinkModal({ 
-  categories, 
-  defaultCategoryId, 
-  onClose, 
-  onAdd, 
-  onUpdate, 
+export default function AddLinkModal({
+  categories,
+  defaultCategoryId,
+  onClose,
+  onAdd,
+  onUpdate,
   linkToEdit,
   initialUrl,
   initialTitle,
-  initialDescription
+  initialDescription,
+  onAddCategory,
+  allTags,
 }: AddLinkModalProps) {
   const isEdit = !!linkToEdit;
 
@@ -127,7 +226,7 @@ export default function AddLinkModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url || !title || saving || !categoryId) return;
-    
+
     setSaving(true);
     const tags = tagsInput
       .split(',')
@@ -147,13 +246,30 @@ export default function AddLinkModal({
     }
   };
 
+  // Compute existing tags from tagsInput for suggestion filtering
+  const currentTags = tagsInput
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+
+  const suggestedTags = (allTags || []).filter(tag => !currentTags.includes(tag));
+
+  const handleAddSuggestedTag = (tag: string) => {
+    const trimmed = tagsInput.trim();
+    if (!trimmed) {
+      setTagsInput(tag);
+    } else {
+      setTagsInput(trimmed + ', ' + tag);
+    }
+  };
+
   return (
     <>
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-6" 
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-6"
         onClick={handleCloseAttempt}
       >
-        <div 
+        <div
           className="bg-white border-t-[4px] sm:border-[4px] border-black shadow-[0_-4px_0_0_#000] sm:shadow-[8px_8px_0_0_#000] w-full sm:max-w-xl flex flex-col sm:rounded-xl overflow-hidden max-h-[95dvh] sm:max-h-[90vh]"
           onClick={e => e.stopPropagation()}
         >
@@ -162,20 +278,20 @@ export default function AddLinkModal({
               <Link2 size={24} className="stroke-[3] sm:w-7 sm:h-7" />
               {isEdit ? 'עריכת לינק' : 'הוסף לינק חדש'}
             </h2>
-            <button 
+            <button
               type="button"
-              onClick={handleCloseAttempt} 
+              onClick={handleCloseAttempt}
               className="neo-btn bg-white hover:bg-red-400 p-2 shadow-[2px_2px_0_0_#000] hover:shadow-[4px_4px_0_0_#000] rounded-lg min-w-[44px] min-h-[44px]"
             >
               <X size={24} className="stroke-[3]" />
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 md:p-8 flex flex-col gap-5 sm:gap-6 bg-[#f4f4f0] overflow-y-auto flex-1">
             <div>
               <label className="block text-sm sm:text-base font-black text-black mb-2 uppercase">כתובת הלינק (URL)</label>
-              <input 
-                type="url" 
+              <input
+                type="url"
                 required
                 value={url}
                 onChange={e => setUrl(e.target.value)}
@@ -184,15 +300,15 @@ export default function AddLinkModal({
                 dir="ltr"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm sm:text-base font-black text-black mb-2 uppercase">כותרת מותאמת אישית</label>
-              <input 
-                type="text" 
+              <label className="block text-sm sm:text-base font-black text-black mb-2 uppercase">כותרת</label>
+              <input
+                type="text"
                 required
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="תן כותרת שתרצה לזכור..."
+                placeholder="שם הלינק..."
                 className="neo-input w-full text-base sm:text-lg shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] min-h-[48px]"
               />
             </div>
@@ -203,12 +319,13 @@ export default function AddLinkModal({
                 categories={categories}
                 value={categoryId}
                 onChange={setCategoryId}
+                onAddCategory={onAddCategory}
               />
             </div>
-            
+
             <div>
               <label className="block text-sm sm:text-base font-black text-black mb-2 uppercase">תיאור (אופציונלי)</label>
-              <textarea 
+              <textarea
                 rows={3}
                 value={description}
                 onChange={e => setDescription(e.target.value)}
@@ -223,24 +340,38 @@ export default function AddLinkModal({
                 תגיות חיפוש
                 <span className="font-bold text-xs lowercase bg-[#fde047] px-2 py-0.5 border-2 border-black rotate-2 shadow-[2px_2px_0_0_#000] mr-2">פסיק בין תגיות</span>
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={tagsInput}
                 onChange={e => setTagsInput(e.target.value)}
                 placeholder="React, CSS, דוגמאות..."
                 className="neo-input w-full text-base sm:text-lg shadow-[4px_4px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] min-h-[48px]"
               />
+              {suggestedTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {suggestedTags.map(tag => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => handleAddSuggestedTag(tag)}
+                      className="text-xs font-bold px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 border-[2px] border-indigo-300 hover:border-indigo-400 rounded-md cursor-pointer transition-colors outline-none"
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            
+
             <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row justify-end gap-3 sm:gap-5 pb-safe">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleCloseAttempt}
                 className="neo-btn bg-slate-300 hover:bg-slate-400 text-black text-base sm:text-lg py-3 px-8 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#000] min-h-[48px]"
               >
                 ביטול
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={saving || !categoryId}
                 className="neo-btn bg-[#34d399] hover:bg-[#10b981] text-black font-black text-base sm:text-lg py-3 px-10 shadow-[4px_4px_0_0_#000] hover:shadow-[6px_6px_0_0_#000] min-h-[48px] disabled:opacity-50"

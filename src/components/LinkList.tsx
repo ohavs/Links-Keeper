@@ -1,7 +1,6 @@
 import React from 'react';
 import { LinkItem, ViewMode, Category } from '../types';
 import LinkCard from './LinkCard';
-import { Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface LinkListProps {
@@ -18,7 +17,6 @@ export default function LinkList({ links, viewMode, categories, onMove, onDelete
   if (links.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 md:p-16 bg-white border-[4px] border-black shadow-[8px_8px_0_0_#000] text-black mt-4 rounded-xl z-10 w-full max-w-2xl mx-auto">
-        <Sparkles size={80} className="stroke-[2] text-[#f472b6] mb-8" />
         <h3 className="text-2xl md:text-3xl font-black mb-4 uppercase text-center bg-[#fde047] px-6 py-2 border-[3px] border-black shadow-[4px_4px_0_0_#000] -rotate-2">הקטגוריה ריקה</h3>
         <p className="text-lg font-bold text-center mt-4">אין כאן לינקים. גרור לכאן לינקים או הוסף חדשים!</p>
         {onAddClick && (

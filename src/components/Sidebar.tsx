@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Folder, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Category } from '../types';
 import ConfirmModal from './ConfirmModal';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   categories: Category[];
@@ -14,6 +15,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ categories, activeCategoryId, onSelectCategory, onAddCategory, onDeleteCategory }: SidebarProps) {
+  const { user, signOut } = useAuth();
   return (
     <div className="w-[240px] flex-shrink-0 bg-white border-l-[3px] border-black hidden md:flex flex-col z-30">
       <div className="px-5 py-3 flex items-center gap-3 border-b-[3px] border-black bg-[#f472b6]">
@@ -40,7 +42,7 @@ export default function Sidebar({ categories, activeCategoryId, onSelectCategory
         </div>
       </div>
 
-      <div className="p-4 border-t-[3px] border-black bg-[#f4f4f0]">
+      <div className="p-4 border-t-[3px] border-black bg-[#f4f4f0] flex flex-col gap-3">
         <button
           onClick={onAddCategory}
           className="neo-btn bg-[#a78bfa] hover:bg-[#8b5cf6] text-black w-full py-2.5 text-sm shadow-[3px_3px_0_0_#000] hover:shadow-[5px_5px_0_0_#000] gap-2"
@@ -48,6 +50,21 @@ export default function Sidebar({ categories, activeCategoryId, onSelectCategory
           <Plus size={18} className="stroke-[3]" />
           <span className="font-black uppercase">קטגוריה חדשה</span>
         </button>
+        {user && (
+          <div className="flex items-center gap-2 pt-1">
+            {user.photoURL && (
+              <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border-[2px] border-black shrink-0" />
+            )}
+            <span className="text-xs font-bold truncate flex-1 text-black/70">{user.displayName || user.email}</span>
+            <button
+              onClick={signOut}
+              title="יציאה"
+              className="shrink-0 w-7 h-7 flex items-center justify-center border-[2px] border-black rounded-md bg-white hover:bg-red-100 cursor-pointer transition-colors"
+            >
+              <LogOut size={14} className="stroke-[2.5]" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
