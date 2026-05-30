@@ -42,7 +42,8 @@ export default function LinkCard({ link, viewMode, categories, onMove, onDelete,
         className={cn(
           "group relative bg-white border-[3px] border-black rounded-xl transition-all cursor-grab active:cursor-grabbing hover:shadow-[8px_8px_0_0_#000] hover:translate-x-[-2px] hover:translate-y-[-2px]",
           isDragging ? "shadow-[12px_12px_0_0_#000] scale-[1.02] bg-yellow-50" : "shadow-[4px_4px_0_0_#000]",
-          isGrid ? "p-4 sm:p-5 flex flex-col h-full gap-3 sm:gap-4" : "p-3 flex items-center justify-between gap-3"
+          isGrid ? "p-4 sm:p-5 flex flex-col h-full gap-3 sm:gap-4" : "p-3 flex items-center justify-between gap-3",
+          showMenu && "z-[100]"
         )}
       >
         <div className={cn("flex-1 min-w-0 flex flex-col gap-2.5", isGrid ? "sm:gap-3" : "justify-center")} >
